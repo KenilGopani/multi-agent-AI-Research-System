@@ -1,4 +1,6 @@
 import asyncio
+import os
+import re
 import sys
 
 import config
@@ -45,6 +47,18 @@ async def run_research(query: str, max_revisions: int = config.MAX_REVISIONS):
     print("FINAL REPORT")
     print("=" * 60)
     print(final_state["final_report"])
+
+    # Save report to a file
+    filename = re.sub(r'[^\w\s-]', '', query.lower())
+    filename = re.sub(r'[-\s]+', '_', filename).strip('_')
+    if not filename:
+        filename = "research_report"
+    filename = f"{filename}.md"
+    
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(final_state["final_report"])
+        
+    print(f"\n[+] Report successfully saved to: {filename}")
 
     return final_state["final_report"]
 
