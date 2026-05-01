@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Research Agent — Multi-Agent Deep Research</title>
+    <meta name="description" content="Autonomous multi-agent AI research system powered by LangGraph, Groq, and Gemini. Generate comprehensive research reports in minutes." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <!-- ─── Ambient background ──────────────────────────────────────────── -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow--1"></div>
+    <div class="bg-glow bg-glow--2"></div>
+    <div class="bg-glow bg-glow--3"></div>
+
+    <!-- ─── Header ──────────────────────────────────────────────────────── -->
+    <header id="site-header">
+        <div class="header-inner">
+            <div class="logo">
+                <span class="logo-icon">🔬</span>
+                <h1>AI Research Agent</h1>
+            </div>
+            <p class="tagline">Multi-Agent Deep Research · Powered by LangGraph</p>
+        </div>
+    </header>
+
+    <!-- ─── Main content ────────────────────────────────────────────────── -->
+    <main id="main-content">
+
+        <!-- Search section -->
+        <section id="search-section" class="glass-card">
+            <h2>What would you like to research?</h2>
+            <form id="research-form">
+                <div class="input-group">
+                    <input
+                        type="text"
+                        id="query-input"
+                        placeholder="e.g. Impact of AI on healthcare in 2025"
+                        required
+                        minlength="3"
+                        maxlength="500"
+                        autocomplete="off"
+                    />
+                    <button type="submit" id="submit-btn">
+                        <span class="btn-text">Research</span>
+                        <span class="btn-icon">→</span>
+                    </button>
+                </div>
+                <div class="example-queries">
+                    <span>Try:</span>
+                    <button type="button" class="chip" data-query="Impact of AI on healthcare in 2025">AI Healthcare</button>
+                    <button type="button" class="chip" data-query="Latest developments in quantum computing 2025">Quantum Computing</button>
+                    <button type="button" class="chip" data-query="Future of renewable energy technology">Renewable Energy</button>
+                    <button type="button" class="chip" data-query="Advances in CRISPR gene editing 2025">CRISPR Gene Editing</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Agent pipeline progress -->
+        <section id="pipeline-section" class="glass-card hidden">
+            <h2>Agent Pipeline</h2>
+            <p class="pipeline-query" id="pipeline-query"></p>
+            <div class="pipeline" id="pipeline">
+                <div class="pipeline-node" id="node-research" data-agent="research">
+                    <div class="node-icon">🔍</div>
+                    <div class="node-info">
+                        <span class="node-label">Research Agent</span>
+                        <span class="node-status">Waiting…</span>
+                    </div>
+                    <div class="node-pulse"></div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-node" id="node-scrape" data-agent="scrape">
+                    <div class="node-icon">🌐</div>
+                    <div class="node-info">
+                        <span class="node-label">Scraper Agent</span>
+                        <span class="node-status">Waiting…</span>
+                    </div>
+                    <div class="node-pulse"></div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-node" id="node-write" data-agent="write">
+                    <div class="node-icon">✍️</div>
+                    <div class="node-info">
+                        <span class="node-label">Writer Agent</span>
+                        <span class="node-status">Waiting…</span>
+                    </div>
+                    <div class="node-pulse"></div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-node" id="node-review" data-agent="review">
+                    <div class="node-icon">🧐</div>
+                    <div class="node-info">
+                        <span class="node-label">Reviewer Agent</span>
+                        <span class="node-status">Waiting…</span>
+                    </div>
+                    <div class="node-pulse"></div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-node" id="node-finalize" data-agent="finalize">
+                    <div class="node-icon">✅</div>
+                    <div class="node-info">
+                        <span class="node-label">Finalize</span>
+                        <span class="node-status">Waiting…</span>
+                    </div>
+                    <div class="node-pulse"></div>
+                </div>
+            </div>
+            <!-- Revision loop indicator -->
+            <div class="revision-indicator hidden" id="revision-indicator">
+                <span class="revision-badge">↻ Revision Loop</span>
+                <span class="revision-text" id="revision-text"></span>
+            </div>
+        </section>
+
+        <!-- Report output -->
+        <section id="report-section" class="glass-card hidden">
+            <div class="report-header">
+                <h2>Research Report</h2>
+                <div class="report-actions">
+                    <button id="copy-btn" class="action-btn" title="Copy to clipboard">
+                        📋 Copy
+                    </button>
+                    <button id="download-btn" class="action-btn" title="Download as Markdown">
+                        ⬇️ Download .md
+                    </button>
+                    <button id="download-pdf-btn" class="action-btn" title="Download as PDF">
+                        📄 Download PDF
+                    </button>
+                    <button id="new-research-btn" class="action-btn action-btn--primary" title="New Research">
+                        🔬 New Research
+                    </button>
+                </div>
+            </div>
+            <div id="report-content" class="report-body"></div>
+        </section>
+
+        <!-- Error section -->
+        <section id="error-section" class="glass-card glass-card--error hidden">
+            <h2>⚠️ Something went wrong</h2>
+            <p id="error-message"></p>
+            <button id="retry-btn" class="action-btn action-btn--primary">Try Again</button>
+        </section>
+
+    </main>
+
+    <!-- ─── Footer ──────────────────────────────────────────────────────── -->
+    <footer id="site-footer">
+        <p>Built with <strong>LangGraph</strong> · <strong>Groq</strong> · <strong>Gemini</strong> · <strong>FastAPI</strong></p>
+    </footer>
+
+    <!-- Markdown renderer (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

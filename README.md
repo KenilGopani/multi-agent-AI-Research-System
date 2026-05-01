@@ -1,199 +1,226 @@
-# Multi-Agent AI Research System
+# 🔬 Multi-Agent AI Research System
 
-An autonomous research pipeline built with LangChain, LangGraph, Tavily, BeautifulSoup, Groq, and Gemini fallback support.
+An autonomous, full-stack research pipeline that generates comprehensive, citation-backed research reports from a single query. Built with a multi-agent architecture using LangGraph for orchestration, Groq & Gemini for LLM inference, and a real-time streaming web interface.
 
-Given a user query, the system:
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-009688?logo=fastapi&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-0.2+-1C3C3C?logo=langchain&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)
 
-1. Generates optimized web search queries.
-2. Searches the web with Tavily.
-3. Scrapes and cleans relevant source pages.
-4. Writes a structured markdown research report.
-5. Reviews the report for quality and factual grounding.
-6. Revises automatically until approved or the revision limit is reached.
+<p align="center">
+  <img src="snapshot.png" alt="AI Research Agent — Web UI" width="800" />
+</p>
 
-## Tech Stack
+---
 
-- **Graph orchestration:** LangGraph
-- **LLM orchestration:** LangChain
-- **Primary LLM:** Groq `llama-3.3-70b-versatile`
-- **Fallback LLM:** Google Gemini `gemini-1.5-flash`
-- **Search:** Tavily Search API
-- **Scraping:** requests, httpx, BeautifulSoup4, lxml
-- **Schemas:** Pydantic v2, TypedDict
-- **Environment:** python-dotenv
+## ✨ Features
 
-No OpenAI or Anthropic backend APIs are used.
+- **Multi-Agent Pipeline** — Four specialized AI agents (Research, Scraper, Writer, Reviewer) collaborate autonomously
+- **Self-Correcting Reports** — Reviewer agent scores the draft and triggers revision loops until quality is approved
+- **Real-Time Streaming UI** — Watch agents work live via Server-Sent Events (SSE)
+- **Dual LLM Strategy** — Groq (Llama 3.3 70B) as primary, Google Gemini as automatic fallback
+- **LLM Response Caching** — SQLite-backed cache eliminates redundant API calls across runs
+- **Smart Scraping** — Dual HTTP fallback (requests → httpx), noise removal, and content extraction
+- **Domain Filtering** — Automatically excludes low-quality sources (social media, forums)
+- **Dockerized** — One-command deployment with `docker-compose up`
 
-## Project Structure
+---
+
+## 🏗️ Architecture
 
 ```text
-multi_agent_research/
-├── .env.example
-├── README.md
-├── requirements.txt
-├── main.py
-├── config.py
-├── state.py
+                    ┌─────────────────────────────────────────┐
+                    │              FastAPI Server              │
+                    │         POST /api/research               │
+                    │         GET  /api/research/:id/stream    │
+                    └────────────────┬────────────────────────┘
+                                     │
+                    ┌────────────────▼────────────────────────┐
+                    │           LangGraph Pipeline             │
+                    │                                          │
+                    │  Research ──▶ Scrape ──▶ Write ──▶ Review│
+                    │                          ▲          │    │
+                    │                          │          │    │
+                    │                          └──────────┘    │
+                    │                       (revision loop)    │
+                    │                              │           │
+                    │                         Finalize ──▶ Done│
+                    └──────────────────────────────────────────┘
+```
+
+### Agent Breakdown
+
+| Agent | Role | File |
+|-------|------|------|
+| 🔍 **Research Agent** | Generates optimized search queries via LLM, searches Tavily, deduplicates & ranks results | `agents/research_agent.py` |
+| 🌐 **Scraper Agent** | Fetches web pages, extracts main content with BeautifulSoup, filters noise | `agents/scraper_agent.py` |
+| ✍️ **Writer Agent** | Produces structured markdown reports with citations from scraped material | `agents/writer_agent.py` |
+| 🧐 **Reviewer Agent** | Scores the report (1–10), returns JSON verdict (APPROVED / NEEDS_REVISION) | `agents/reviewer_agent.py` |
+
+---
+
+## 📁 Project Structure
+
+```text
+├── api.py                  # FastAPI server with REST + SSE endpoints
+├── main.py                 # CLI entry point
+├── config.py               # Central configuration
+├── state.py                # Pydantic schemas & TypedDict state
 ├── agents/
-│   ├── __init__.py
-│   ├── research_agent.py
-│   ├── scraper_agent.py
-│   ├── writer_agent.py
-│   └── reviewer_agent.py
-├── tools/
-│   ├── __init__.py
-│   ├── search_tool.py
-│   └── scraper_tool.py
+│   ├── research_agent.py   # Search query generation & Tavily search
+│   ├── scraper_agent.py    # Web scraping orchestration
+│   ├── writer_agent.py     # Report drafting
+│   └── reviewer_agent.py   # Quality review & revision gating
 ├── graph/
-│   ├── __init__.py
-│   └── research_graph.py
+│   └── research_graph.py   # LangGraph state machine definition
+├── tools/
+│   ├── search_tool.py      # Tavily API wrapper
+│   └── scraper_tool.py     # HTTP fetching & HTML parsing
 ├── prompts/
-│   ├── __init__.py
-│   ├── research_prompts.py
-│   ├── writer_prompts.py
-│   └── reviewer_prompts.py
-└── utils/
-    ├── __init__.py
-    └── helpers.py
+│   ├── research_prompts.py # Search query generation prompt
+│   ├── writer_prompts.py   # Report writing prompt
+│   └── reviewer_prompts.py # Review & scoring prompt
+├── utils/
+│   └── helpers.py          # LLM invocation, retries, text utils
+├── frontend/
+│   ├── index.html          # Web UI
+│   ├── style.css           # Dark-mode glassmorphism design
+│   └── app.js              # SSE streaming & pipeline visualization
+├── Dockerfile
+├── docker-compose.yml
+└── requirements.txt
 ```
 
-## Requirements
+---
 
-- Python 3.10+ recommended
-- Groq API key
-- Tavily API key
-- Optional Google API key for Gemini fallback
+## 🛠️ Tech Stack
 
-The project was tested locally with Python 3.9.6, but some Google packages warn that Python 3.9 is past support. Use Python 3.10 or newer for the cleanest setup.
+| Layer | Technology |
+|-------|-----------|
+| **Orchestration** | LangGraph (state machine with conditional edges) |
+| **LLM Framework** | LangChain |
+| **Primary LLM** | Groq — `llama-3.3-70b-versatile` |
+| **Fallback LLM** | Google Gemini — `gemini-1.5-flash` |
+| **Search API** | Tavily (advanced depth) |
+| **Web Scraping** | requests, httpx, BeautifulSoup4, lxml |
+| **API Server** | FastAPI + Uvicorn |
+| **Frontend** | Vanilla HTML/CSS/JS with SSE |
+| **Caching** | LangChain SQLiteCache |
+| **Schemas** | Pydantic v2, TypedDict |
+| **Containerization** | Docker + Docker Compose |
 
-## Setup
+---
 
-From this directory:
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.10+
+- API keys: [Groq](https://console.groq.com/) (required), [Tavily](https://tavily.com/) (required), [Google AI](https://aistudio.google.com/) (optional fallback)
+
+### Local Setup
 
 ```bash
-cd /Users/spartan/Downloads/doc-ai/multi_agent_research
-```
+# Clone and enter the project
+git clone https://github.com/your-username/multi-agent-AI-Research-System.git
+cd multi-agent-AI-Research-System
 
-Create and activate a virtual environment:
-
-```bash
+# Create a virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-```
 
-Install dependencies:
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-Create your environment file:
-
-```bash
+# Configure API keys
 cp .env.example .env
+# Edit .env with your keys
 ```
 
-Edit `.env` and fill in your keys:
-
-```env
-GROQ_API_KEY=your_groq_api_key_here
-TAVILY_API_KEY=your_tavily_api_key_here
-GOOGLE_API_KEY=your_google_api_key_here
-```
-
-`GOOGLE_API_KEY` is optional. If it is missing, the system will use only Groq. If it is present but invalid, Gemini fallback calls will fail.
-
-## Running
-
-Run the full research pipeline:
+### Run the Web UI
 
 ```bash
-.venv/bin/python main.py "Impact of AI on healthcare in 2025"
+uvicorn api:app --reload
 ```
 
-Another example:
+Open [http://localhost:8000](http://localhost:8000) in your browser.
+
+### Run via CLI
 
 ```bash
-.venv/bin/python main.py "Latest developments in quantum computing 2025"
+python main.py "Impact of AI on healthcare in 2025"
 ```
 
-You should see progress logs for each LangGraph node:
+The report will be printed to the terminal and saved as a `.md` file automatically.
 
-```text
-Research agent: generating optimized search queries
-Research agent: searching 3 query variants
-Scraper agent: extracting source content
-Writer agent: drafting report
-Reviewer agent: checking report quality
+### Run with Docker
+
+```bash
+docker-compose up --build
 ```
 
-At the end, the CLI prints the final markdown report and automatically saves it as a `.md` file in the project directory based on your query.
+Open [http://localhost:8000](http://localhost:8000).
 
-## Agent Pipeline
+---
 
-The graph is defined in `graph/research_graph.py`.
+## ⚙️ Configuration
 
-```text
-research -> scrape -> write -> review -> finalize
-                         ^        |
-                         |        |
-                         +--------+
-```
-
-If the reviewer returns `NEEDS_REVISION`, the graph loops back to the writer. Once the report is approved or the revision limit is reached, the graph finalizes the report.
-
-## Agents
-
-### Research Agent
-
-File: `agents/research_agent.py`
-
-- Uses an LLM to generate 3 optimized search queries.
-- Searches Tavily with varied phrasings.
-- Deduplicates URLs.
-- Filters low-quality domains such as social media and forums.
-- Returns ranked `SearchResult` objects.
-
-### Scraper Agent
-
-File: `agents/scraper_agent.py`
-
-- Scrapes the top search results.
-- Uses `requests` first and falls back to `httpx`.
-- Removes scripts, styles, nav, footer, header, forms, and other noisy elements.
-- Extracts article/main/content text.
-- Marks short or failed pages as unsuccessful without crashing the pipeline.
-
-### Writer Agent
-
-File: `agents/writer_agent.py`
-
-- Writes a markdown report from scraped source material.
-- Includes review feedback on revision passes.
-- Produces executive summary, key findings, detailed analysis, conclusion, and sources.
-
-### Reviewer Agent
-
-File: `agents/reviewer_agent.py`
-
-- Reviews the report against the original query and source material.
-- Requests valid JSON from the LLM.
-- Strips markdown JSON fences before parsing.
-- Falls back to a default `ReviewResult` if parsing fails.
-
-## Configuration
-
-Main settings live in `config.py`:
+All settings are centralized in `config.py`:
 
 ```python
-PRIMARY_MODEL = "llama-3.3-70b-versatile"
-FALLBACK_MODEL = "gemini-1.5-flash"
-TEMPERATURE = 0.1
-MAX_TOKENS = 4000
-SCRAPE_TIMEOUT = 10
-MAX_CONTENT_LEN = 3000
-MAX_URLS = 5
-MAX_REVISIONS = 2
+PRIMARY_MODEL        = "llama-3.3-70b-versatile"
+FALLBACK_MODEL       = "gemini-1.5-flash"
+TEMPERATURE          = 0.1
+MAX_TOKENS           = 4000
+SCRAPE_TIMEOUT       = 10      # seconds
+MAX_CONTENT_LEN      = 3000    # tokens per source
+MAX_URLS             = 5       # sources to scrape
+MAX_REVISIONS        = 2       # reviewer loop limit
 ```
 
-Groq previously supported `llama-3.1-70b-versatile`, but that model has been decommissioned. This project uses `llama-3.3-70b-versatile`.
+---
+
+## 📡 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/research` | Start a new research job (returns `job_id`) |
+| `GET` | `/api/research/{job_id}` | Poll job status, events, and final report |
+| `GET` | `/api/research/{job_id}/stream` | SSE stream of real-time agent progress |
+| `GET` | `/api/jobs` | List all research jobs |
+
+### Example Request
+
+```bash
+curl -X POST http://localhost:8000/api/research \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Impact of AI on healthcare in 2025"}'
+```
+
+---
+
+## 🧪 Development
+
+```bash
+# Compile-check all source files
+python -m compileall agents graph prompts tools utils config.py state.py main.py api.py
+
+# Smoke test the graph
+python -c "from graph.research_graph import build_graph; build_graph(); print('graph ok')"
+```
+
+---
+
+## 📝 Notes
+
+- A single failed URL will not crash the pipeline
+- Scraping includes a small delay between requests to reduce blocking risk
+- Network, search, and LLM calls use error handling and retry logic with exponential backoff
+- Reports are saved to disk as `.md` files and served via the web UI
+- LLM responses are cached in `.langchain.db` for faster repeat runs
+
+---
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).

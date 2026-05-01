@@ -124,3 +124,10 @@ cython_debug/
 
 # Langchain Cache
 .langchain.db
+
+# Generated reports
+*.md
+!README.md
+
+# Docker
+reports/
