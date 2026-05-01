@@ -4,9 +4,14 @@ import re
 import sys
 
 import config
+from langchain.globals import set_llm_cache
+from langchain_community.cache import SQLiteCache
 from graph.research_graph import build_graph
 from state import ResearchState
 
+
+# Enable global LLM caching across script executions to improve performance
+set_llm_cache(SQLiteCache(database_path=".langchain.db"))
 
 async def run_research(query: str, max_revisions: int = config.MAX_REVISIONS):
     initial_state: ResearchState = {
