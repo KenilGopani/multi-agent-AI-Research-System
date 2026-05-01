@@ -127,7 +127,7 @@ Writer agent: drafting report
 Reviewer agent: checking report quality
 ```
 
-At the end, the CLI prints the final markdown report.
+At the end, the CLI prints the final markdown report and automatically saves it as a `.md` file in the project directory based on your query.
 
 ## Agent Pipeline
 
@@ -197,78 +197,3 @@ MAX_REVISIONS = 2
 ```
 
 Groq previously supported `llama-3.1-70b-versatile`, but that model has been decommissioned. This project uses `llama-3.3-70b-versatile`.
-
-## Troubleshooting
-
-### Groq model decommissioned
-
-If you see:
-
-```text
-The model `llama-3.1-70b-versatile` has been decommissioned
-```
-
-Make sure `config.py` uses:
-
-```python
-PRIMARY_MODEL = "llama-3.3-70b-versatile"
-```
-
-### Gemini API key invalid
-
-If you see:
-
-```text
-API key not valid. Please pass a valid API key.
-```
-
-Fix `GOOGLE_API_KEY` in `.env`, or remove it if you only want to use Groq.
-
-### Tavily key missing
-
-If you see:
-
-```text
-TAVILY_API_KEY is not set
-```
-
-Add your Tavily key to `.env`:
-
-```env
-TAVILY_API_KEY=your_tavily_api_key_here
-```
-
-### NotOpenSSLWarning on macOS
-
-You may see:
-
-```text
-urllib3 v2 only supports OpenSSL 1.1.1+
-```
-
-This warning usually appears with the system Python on macOS. The project may still run, but using a newer Python installation from Homebrew or pyenv is recommended.
-
-### Python 3.9 support warnings
-
-Google packages may warn that Python 3.9 is no longer supported. Upgrade to Python 3.10+ if possible.
-
-## Development Checks
-
-Compile the source files:
-
-```bash
-PYTHONPYCACHEPREFIX=/tmp/doc-ai-pycache .venv/bin/python -m compileall agents graph prompts tools utils config.py state.py main.py
-```
-
-Smoke test the graph:
-
-```bash
-.venv/bin/python -c "from graph.research_graph import build_graph; build_graph(); print('graph ok')"
-```
-
-## Notes
-
-- A single failed URL will not crash the pipeline.
-- Scraping includes a small delay between requests to reduce blocking risk.
-- Network, search, and LLM calls use error handling and retry logic.
-- The final report is printed to stdout; it is not written to disk by default.
